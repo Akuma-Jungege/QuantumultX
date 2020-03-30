@@ -1,16 +1,17 @@
-const cookieName = '京东来客有礼'
-const signurlKey = 'sy_signurl_lkyl'
-const signheaderKey = 'sy_signheader_lkyl'
-const sy = init()
+const cookieName = '豆瓣时间'
+const signurlKey = 'senku_signurl_dbsj'
+const signheaderKey = 'senku_signheader_dbsj'
+const signbodyKey = 'senku_signbody_dbsj'
+const senku = init()
+
 const requrl = $request.url
 if ($request && $request.method != 'OPTIONS') {
   const signurlVal = requrl
   const signheaderVal = JSON.stringify($request.headers)
-  sy.log(`signurlVal:${signurlVal}`)
-  sy.log(`signheaderVal:${signheaderVal}`)
-  if (signurlVal) sy.setdata(signurlVal, signurlKey)
-  if (signheaderVal) sy.setdata(signheaderVal, signheaderKey)
-  sy.msg(cookieName, `获取Cookie: 成功🎉`, ``)
+
+  if (signurlVal) senku.setdata(signurlVal, signurlKey)
+  if (signheaderVal) senku.setdata(signheaderVal, signheaderKey)
+  senku.msg(cookieName, `获取Cookie: 成功`, ``)
 }
 
 function init() {
@@ -56,4 +57,4 @@ function init() {
   }
   return { isSurge, isQuanX, msg, log, getdata, setdata, get, post, done }
 }
-sy.done()
+senku.done()
