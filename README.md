@@ -8,9 +8,7 @@ nzw9314库直接调用
 
 建立本地文件夹 目录 iCloud Drive/QuantumultX/Scripts/nzw9314 或者 我的iPhone/QuantumultX/Scripts/nzw9314
 
-WoringCopy挂载我的仓库
-
-
+NO.1  WoringCopy挂载我的仓库
 
 https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Js_local_WorkingCopy.conf 脚本订阅.
 
@@ -22,7 +20,9 @@ https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Get_Cookie_New.co
 
 https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Task_Local.conf 定时任务配置,目前无法订阅,请手动根据个人需求复制内容及修改时间.
 
-远程配置：
+
+
+NO.2  商1.0.0或者TF 远程配置：
 
 https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Js.conf 脚本远程订阅
 
