@@ -20,6 +20,15 @@ https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Get_Cookie_New.co
 
 https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Task_Local.conf 定时任务配置,目前无法订阅,请手动根据个人需求复制内容及修改时间.
 
+https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/NeteaseMusic.list  网易云远程分流订阅
+
+
+
+
+
+
+
+
 
 
 NO.2  商1.0.0或者TF 远程配置：
