@@ -8,7 +8,7 @@ nzw9314库直接调用
 
 建立本地文件夹 目录 iCloud Drive/QuantumultX/Scripts/nzw9314 或者 我的iPhone/QuantumultX/Scripts/nzw9314
 
-NO.1  WoringCopy挂载我的仓库
+NO.1  WoringCopy挂载我的仓库：https://github.com/JungegeCN/QuantumultX.git
 
 https://raw.githubusercontent.com/JungegeCN/QuantumultX/master/Js_local_WorkingCopy.conf 脚本订阅.
 
