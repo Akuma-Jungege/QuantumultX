@@ -1,25 +1,34 @@
 const __conf = String.raw`
 
-
 [Remote]
 // custom remote...
-https://raw.githubusercontent.com/yichahucha/surge/master/sub_script.conf
 
 
 [Local]
 // custom local...
 
+# nf
+http-request ^https?://ios\.prod\.ftl\.netflix\.com/iosui/user/.+path=%5B%22videos%22%2C%\d+%22%2C%22summary%22%5D script-path=https://raw.githubusercontent.com/yichahucha/surge/master/nf_rating.js
+http-response ^https?://ios\.prod\.ftl\.netflix\.com/iosui/user/.+path=%5B%22videos%22%2C%\d+%22%2C%22summary%22%5D requires-body=1,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/nf_rating.js
+# jd
+^https?://api\.m\.jd\.com/client\.action\?functionId=(wareBusiness|serverConfig) url script-response-body https://raw.githubusercontent.com/yichahucha/surge/master/jd_price.js
+# tb
+tb_price.js = type=http-request,requires-body=1,pattern=^http://.+/amdc/mobileDispatch,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/tb_price.js
+tb_price.js = type=http-response,requires-body=1,pattern=^https?://trade-acs\.m\.taobao\.com/gw/mtop\.taobao\.detail\.getdetail,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/tb_price.js
+# wb
+http-response ^https?://(sdk|wb)app\.uve\.weibo\.com(/interface/sdk/sdkad.php|/wbapplua/wbpullad.lua) requires-body=1,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/wb_launch.js
+http-response ^https?://m?api\.weibo\.c(n|om)/2/(statuses/(unread|extend|positives/get|(friends|video)(/|_)(mix)?timeline)|stories/(video_stream|home_list)|(groups|fangle)/timeline|profile/statuses|comments/build_comments|photo/recommend_list|service/picfeed|searchall|cardlist|page|!/photos/pic_recommend_status|video/tiny_stream_video_list) requires-body=1,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/wb_ad.js
+
 
 [Hostname]
 // custom hostname...
-// www.baidu.com, www.google.com
-
+api.weibo.cn, mapi.weibo.com, *.uve.weibo.com, trade-acs.m.taobao.com, api.m.jd.com, ios.prod.ftl.netflix.com
 
 `
 
-// 是否开启 GitHub 更新
+// 是否更新 GitHub（如果开启 true，需配置 token 或 账号密码）
 const __isUpdateGithub = true
-// GitHub Token（如果使用账号密码 Token 请设置为空 ""）
+// GitHub Token（如果使用账号密码 token 请设置为空 ""）
 const __token = ""
 // GitHub 账号
 const __username = "xxx"
@@ -31,9 +40,11 @@ const __owner = "yichahucha"
 const __repo = "surge"
 // GitHub 分支（不指定就使用默认分支）
 const __branch = "master"
+// 指定 eval_script.js 文件路径（路径为空 "" 使用脚本原始路径）
+const __evalPath = "eval_script.js"
 // GitHub 文件路径（没有文件新创建，已有文件覆盖更新，路径为空 "" 不更新）
-const __quanxPath = "eval_sub/quanx.txt"
-const __surgePath = "eval_sub/surge.txt"
+const __quanxPath = "eval_script/qx_script.txt"
+const __surgePath = "eval_script/sg_script.sgmodule"
 // GitHub 更新日志
 const __quanxCommit = "update"
 const __surgeCommit = "update"
@@ -155,9 +166,10 @@ if (__tool.isTask) {
         //update github
         .then(() => {
             if (__isUpdateGithub) {
-                const hostname = `${storeObj.confHostnames.length > 0 ? `hostname=${Array.from(new Set(storeObj.confHostnames)).join(",")}` : ""}`
-                const quanxUpdateContent = `${hostname}\n\n${Array.from(new Set(storeObj.quanxConfContents)).join("\n\n")}`
-                const surgeUpdateContent = `${hostname}\n\n${Array.from(new Set(storeObj.surgeConfContents)).join("\n\n")}`
+                const quanxHostname = `${storeObj.confHostnames.length > 0 ? `hostname = ${Array.from(new Set(storeObj.confHostnames)).join(",")}` : ""}`
+                const surgeHostname = `${storeObj.confHostnames.length > 0 ? `hostname = %INSERT% ${Array.from(new Set(storeObj.confHostnames)).join(",")}` : ""}`
+                const quanxUpdateContent = `${quanxHostname}\n\n${Array.from(new Set(storeObj.quanxConfContents)).join("\n\n")}`
+                const surgeUpdateContent = `#!name=eval_script.js module\n\n[MITM]\n${surgeHostname}\n\n[Script]\n${Array.from(new Set(storeObj.surgeConfContents)).join("\n\n")}`
                 const args = [{ path: __quanxPath, content: quanxUpdateContent, commit: __quanxCommit }, { path: __surgePath, content: surgeUpdateContent, commit: __surgeCommit }]
                 console.log("Start updating github...")
                 const update = async () => {
@@ -366,7 +378,7 @@ async function ____updateGitHub(path, content, message) {
                     if (__log) console.log(`updateContent: ${response.status}\n${body}`)
                     body = JSON.parse(body)
                     if (response.status == 200) {
-                        resolve({ url: body.content.download_url, message: `${__emojiGitHub}GitHub updated successfully` })
+                        resolve({ url: body.content.download_url, message: `${__emojiGitHub}GitHub updated successfully${sha != body.content.sha ? " (file changes)" : ""}` })
                     } else if (response.status == 201) {
                         resolve({ url: body.content.download_url, message: `${__emojiGitHub}GitHub file created successfully` })
                     } else {
@@ -418,7 +430,7 @@ function ____concurrentQueueLimit(list, limit, asyncHandle) {
 function ____downloadFile(url) {
     return new Promise((resolve) => {
         __tool.get(url, (error, response, body) => {
-            const filename = url.match(/.*\/(.*?)$/)[1]
+            const filename = url.match(/[^\/]+$/)[0]
             if (!error) {
                 const code = response.statusCode
                 if (code == 200) {
@@ -462,6 +474,7 @@ function ____parseRemoteConf(conf) {
     for (let i = 0, len = lines.length; i < len; i++) {
         const eval = /^(.+)\s+eval\s+(.+)$/
         const surge = /^http\s*-\s*(request|response)\s+(\S+)\s+(.+)$/
+        const newSurge = /^\S+.js\s+=\s(.+)$/
         const quanx = /^(\S+)\s+url\s+script\s*-\s*(\S+)\s*-\s*(?:header|body)\s+(\S+)$/
         let line = lines[i].trim()
         if (line.length > 0) {
@@ -469,7 +482,7 @@ function ____parseRemoteConf(conf) {
                 line = line.replace(/^#*/, "")
                 newLines.push(line)
             } else if (/^(?!;|#|\/\/).*/.test(line)) {
-                if (eval.test(line) || surge.test(line)) {
+                if (eval.test(line) || surge.test(line) || newSurge.test(line)) {
                     newLines.push(line)
                 }
                 if (quanx.test(line)) {
@@ -496,16 +509,28 @@ function ____parseConf(lines) {
         if (line.length > 0 && line.substring(0, 2) != "//" && line.substring(0, 1) != "#") {
             const eval = /^(.+)\s+eval\s+(.+)$/
             const surge = /^http\s*-\s*(request|response)\s+(\S+)\s+(.+)$/
+            const newSurge = /^\S+.js\s+=\s(.+)$/
             const quanx = /^(\S+)\s+url\s+script\s*-\s*(\S+)\s+(\S+\.js)$/
             if (surge.test(line)) {
                 const result = line.match(surge)
                 // content
                 const requiresBody = ____surgeArg(result[3].trim()).requiresBody
-                surgeConfContents.push(`${line.replace(____surgeArg(result[3].trim()).scriptPath, "eval_script.js")}`)
-                quanxConfContents.push(`${result[2].trim()} url script-${result[1].trim()}-${requiresBody == "1" ? "body" : "header"} eval_script.js`)
+                // surgeConfContents.splice(i, 0, `${line.replace(____surgeArg(result[3].trim()).scriptPath, "eval_script.js")}`);
+                if (__evalPath.length > 0) {
+                    const path = __evalPath
+                    const fileName = path.match(/[^\/]+$/)[0]
+                    surgeConfContents.push(`${fileName} = type=http-${result[1].trim()},${requiresBody ? `requires-body=${requiresBody},` : ""}pattern=${result[2].trim()},script-path=${path}`)
+                    quanxConfContents.push(`${result[2].trim()} url script-${result[1].trim()}-${requiresBody == "1" ? "body" : "header"} ${path}`)
+                } else {
+                    const path = ____surgeArg(result[3].trim()).scriptPath
+                    const fileName = path.match(/[^\/]+$/)[0]
+                    surgeConfContents.push(`${fileName} = type=http-${result[1].trim()},${requiresBody ? `requires-body=${requiresBody},` : ""}pattern=${result[2].trim()},script-path=${path}`)
+                    quanxConfContents.push(`${result[2].trim()} url script-${result[1].trim()}-${requiresBody == "1" ? "body" : "header"} ${path}`)
+                }
                 // eval
                 line = `${result[1].trim()} ${result[2].trim()} eval ${____surgeArg(result[3].trim()).scriptPath}`
-            } else if (quanx.test(line)) {
+            }
+            else if (quanx.test(line)) {
                 const result = line.match(quanx)
                 const type = result[2].split("-")
                 // content
@@ -517,11 +542,38 @@ function ____parseConf(lines) {
                         requires = 1
                     }
                 }
-                surgeConfContents.push(`http-${type[0].trim()} ${result[1].trim()} ${requires == 0 ? "" : `requires-body=${requires},`}script-path=eval_script.js`)
-                quanxConfContents.push(`${line.replace(result[3].trim(), "eval_script.js")}`)
+                // surgeConfContents.splice(i, 0, `http-${type[0].trim()} ${result[1].trim()} ${requires == 0 ? "" : `requires-body=${requires},`}script-path=eval_script.js`)
+                if (__evalPath.length > 0) {
+                    const path = __evalPath
+                    const fileName = path.match(/[^\/]+$/)[0]
+                    surgeConfContents.push(`${fileName} = type=http-${type[0].trim()},${requires == 0 ? "" : `requires-body=${requires},`}pattern=${result[1].trim()},script-path=${path}`)
+                    quanxConfContents.push(`${line.replace(result[3].trim(), path)}`)
+                } else {
+                    const path = result[3].trim()
+                    const fileName = path.match(/[^\/]+$/)[0]
+                    surgeConfContents.push(`${fileName} = type=http-${type[0].trim()},${requires == 0 ? "" : `requires-body=${requires},`}pattern=${result[1].trim()},script-path=${path}`)
+                    quanxConfContents.push(line)
+                }
                 // eval
                 line = `${type[0].trim()} ${result[1].trim()} eval ${result[3].trim()}`
-
+            }
+            else if (newSurge.test(line)) {
+                //content
+                const result = line.match(newSurge)
+                const surgeArg = ____surgeArg(result[1].trim())
+                // surgeConfContents.splice(i, 0, `${surgeArg.type} ${surgeArg.pattern} ${surgeArg.requiresBody ? `requires-body=${surgeArg.requiresBody},` : ""}script-path=eval_script.js`)
+                if (__evalPath.length > 0) {
+                    const path = __evalPath
+                    const fileName = path.match(/[^\/]+$/)[0]
+                    surgeConfContents.push(`${fileName} = ${result[1].replace(surgeArg.scriptPath, path)}`)
+                    quanxConfContents.push(`${surgeArg.pattern} url script-${surgeArg.type.replace("http-", "")}-${(surgeArg.requiresBody && surgeArg.requiresBody == "1") ? "body" : "header"} ${path}`)
+                } else {
+                    const path = surgeArg.scriptPath
+                    surgeConfContents.push(line)
+                    quanxConfContents.push(`${surgeArg.pattern} url script-${surgeArg.type.replace("http-", "")}-${(surgeArg.requiresBody && surgeArg.requiresBody == "1") ? "body" : "header"} ${path}`)
+                }
+                // eval
+                line = `${surgeArg.type.replace("http-", "")} ${surgeArg.pattern} eval ${surgeArg.scriptPath}`
             }
             if (eval.test(line)) {
                 const value = line.match(eval)
@@ -572,11 +624,19 @@ function ____surgeArg(arg) {
         const item = args[i].trim()
         const path = /^script-path\s*=\s*(\S+)$/
         const requires = /^requires-body\s*=\s*(\S+)$/
+        const pattern = /^pattern\s*=\s*(\S+)$/
+        const type = /^type\s*=\s*(\S+)$/
         if (path.test(item)) {
             surgeArg["scriptPath"] = item.match(path)[1]
         }
         if (requires.test(item)) {
             surgeArg["requiresBody"] = item.match(requires)[1]
+        }
+        if (pattern.test(item)) {
+            surgeArg["pattern"] = item.match(pattern)[1]
+        }
+        if (type.test(item)) {
+            surgeArg["type"] = item.match(type)[1]
         }
     }
     return surgeArg
